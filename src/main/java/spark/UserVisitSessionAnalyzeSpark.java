@@ -28,9 +28,9 @@ import java.util.Iterator;
 
 /**
  * 用户访问session分析Spark作业
- *
+ * <p>
  * 接收用户创建的分析任务，用户可能指定的条件如下：
- *
+ * <p>
  * 1、时间范围：起始时间~结束时间
  * 2、性别：男或女
  * 3、年龄范围
@@ -38,18 +38,17 @@ import java.util.Iterator;
  * 5、城市：多选
  * 6、搜索词：多个搜索词，只要某个session中的任何一个action搜索过指定的关键词，那么session就符合条件
  * 7、点击品类：多个品类，只要某个session中的任何一个action点击过某个品类，那么session就符合条件
- *
+ * <p>
  * 我们的spark作业如何接受用户创建的任务？
- *
+ * <p>
  * J2EE平台在接收用户创建任务的请求之后，会将任务信息插入MySQL的task表中，任务参数以JSON格式封装在task_param
  * 字段中
- *
+ * <p>
  * 接着J2EE平台会执行我们的spark-submit shell脚本，并将taskid作为参数传递给spark-submit shell脚本
  * spark-submit shell脚本，在执行时，是可以接收参数的，并且会将接收的参数，传递给Spark作业的main函数
  * 参数就封装在main函数的args数组中
- *
+ * <p>
  * 这是spark本身提供的特性
- *
  */
 public class UserVisitSessionAnalyzeSpark {
 
@@ -62,7 +61,7 @@ public class UserVisitSessionAnalyzeSpark {
         SQLContext sqlContext = getSQLContext(sc.sc());
 
         //生成模拟测试数据
-        mockData(sc,sqlContext);
+        mockData(sc, sqlContext);
 
         // 创建需要使用的DAO组件
         ITaskDAO taskDAO = DAOFactory.getTaskDAO();
@@ -75,14 +74,14 @@ public class UserVisitSessionAnalyzeSpark {
         System.out.println(taskParam);
         // 如果要进行session粒度的数据聚合
         // 首先要从user_visit_action表中，查询出来指定日期范围内的行为数据
-        JavaRDD<Row> actionRDD = getActionRDDByDateRange(sqlContext,taskParam);
+        JavaRDD<Row> actionRDD = getActionRDDByDateRange(sqlContext, taskParam);
         System.out.println(actionRDD);
 
         // 首先，可以将行为数据，按照session_id进行groupByKey分组
         // 此时的数据的粒度就是session粒度了，然后呢，可以将session粒度的数据
         // 与用户信息数据，进行join
         // 然后就可以获取到session粒度的数据，同时呢，数据里面还包含了session对应的user的信息
-        JavaPairRDD<String,String> sessionid2AggrInfoRDD = aggregateBySession(sqlContext,actionRDD);
+        JavaPairRDD<String, String> sessionid2AggrInfoRDD = aggregateBySession(sqlContext, actionRDD);
 
         // 接着，就要针对session粒度的聚合数据，按照使用者指定的筛选参数进行数据过滤
         // 相当于我们自己编写的算子，是要访问外面的任务参数对象的
@@ -98,39 +97,42 @@ public class UserVisitSessionAnalyzeSpark {
      * 获取SQLContext
      * 如果是在本地环境运行的话，那么就生成SQLContext对象
      * 如果是在生产环境运行，那么就生成HiveContext对象
+     *
      * @param sc
      * @return
      */
-    private static SQLContext getSQLContext(SparkContext sc){
+    private static SQLContext getSQLContext(SparkContext sc) {
         boolean local = ConfigurationManager.getBoolean(Constants.SPARK_LOCAL);
-        if(local){
+        if (local) {
             return new SQLContext(sc);
-        }else{
+        } else {
             return new HiveContext(sc);
         }
     }
 
     /**
      * 生成模拟数据（只有本地模式，才会去生成模拟数据）
+     *
      * @param sc
      * @param sqlContext
      */
-    private static void mockData(JavaSparkContext sc,SQLContext sqlContext){
+    private static void mockData(JavaSparkContext sc, SQLContext sqlContext) {
         boolean local = ConfigurationManager.getBoolean(Constants.SPARK_LOCAL);
-        if(local){
-            MockData.mock(sc,sqlContext);
+        if (local) {
+            MockData.mock(sc, sqlContext);
         }
     }
 
     /**
      * 获取指定日期范围内的用户访问行为数据
+     *
      * @param sqlContext
      * @param taskParam
      * @return
      */
-    private static JavaRDD<Row> getActionRDDByDateRange(SQLContext sqlContext, JSONObject taskParam){
-        String startDate = ParamUtils.getParam(taskParam,Constants.PARAM_START_DATE);
-        String endDate = ParamUtils.getParam(taskParam,Constants.PARAM_END_DATE);
+    private static JavaRDD<Row> getActionRDDByDateRange(SQLContext sqlContext, JSONObject taskParam) {
+        String startDate = ParamUtils.getParam(taskParam, Constants.PARAM_START_DATE);
+        String endDate = ParamUtils.getParam(taskParam, Constants.PARAM_END_DATE);
         String sql =
                 "select * "
                         + "from user_visit_action "
@@ -144,27 +146,28 @@ public class UserVisitSessionAnalyzeSpark {
 
     /**
      * 对行为数据按session粒度进行聚合
+     *
      * @param sqlContext
      * @param actionRDD
      * @return
      */
-    private static JavaPairRDD<String,String> aggregateBySession(SQLContext sqlContext,JavaRDD<Row> actionRDD){
+    private static JavaPairRDD<String, String> aggregateBySession(SQLContext sqlContext, JavaRDD<Row> actionRDD) {
 
-        JavaPairRDD<String,Row> sessionid2ActionRDD = actionRDD.mapToPair(
-        /**
-         *  PairFunction
-         *  第一个参数，相当于是函数的输入
-         *  第二个参数和第三个参数，相当于是函数的输出(Tuple),分别是Tuple第一个和第二个值
-          */
-          new PairFunction<Row, String, Row>() {
-            @Override
-            public Tuple2<String, Row> call(Row row) throws Exception {
-                return new Tuple2<String, Row>(row.getString(2),row);
-            }
-        });
+        JavaPairRDD<String, Row> sessionid2ActionRDD = actionRDD.mapToPair(
+                /**
+                 *  PairFunction
+                 *  第一个参数，相当于是函数的输入
+                 *  第二个参数和第三个参数，相当于是函数的输出(Tuple),分别是Tuple第一个和第二个值
+                 */
+                new PairFunction<Row, String, Row>() {
+                    @Override
+                    public Tuple2<String, Row> call(Row row) throws Exception {
+                        return new Tuple2<String, Row>(row.getString(2), row);
+                    }
+                });
 
         //对行为数据按session粒度进行分组
-        JavaPairRDD<String,Iterable<Row>> sessionid2ActionsRDD = sessionid2ActionRDD.groupByKey();
+        JavaPairRDD<String, Iterable<Row>> sessionid2ActionsRDD = sessionid2ActionRDD.groupByKey();
 
         System.out.println(sessionid2ActionsRDD);
 
@@ -172,7 +175,7 @@ public class UserVisitSessionAnalyzeSpark {
          * 对每一个session分组进行聚合，将session中所有的搜索词和点击品类都聚合起来
          * 到此为止，获取的数据格式，如下：<userid,partAggrInfo(sessionid,searchKeywords,clickCategoryIds)>
          */
-        JavaPairRDD<Long,String> userid2PartAggrInfoRDD = sessionid2ActionsRDD.mapToPair(
+        JavaPairRDD<Long, String> userid2PartAggrInfoRDD = sessionid2ActionsRDD.mapToPair(
                 new PairFunction<Tuple2<String, Iterable<Row>>, Long, String>() {
                     @Override
                     public Tuple2<Long, String> call(Tuple2<String, Iterable<Row>> tuple) throws Exception {
@@ -187,10 +190,10 @@ public class UserVisitSessionAnalyzeSpark {
                         Long userid = null;
 
                         //遍历session所有的访问行为
-                        while (iterator.hasNext()){
+                        while (iterator.hasNext()) {
                             // 提取每个访问行为的搜索词字段和点击品类字段
                             Row row = iterator.next();
-                            if(userid==null){
+                            if (userid == null) {
                                 userid = row.getLong(1);
                             }
                             String searchKeyword = row.getString(5);
@@ -206,12 +209,12 @@ public class UserVisitSessionAnalyzeSpark {
                             // 首先要满足：不能是null值
                             // 其次，之前的字符串中还没有搜索词或者点击品类id
                             if (StringUtils.isNotEmpty(searchKeyword)) {
-                                if(!searchKeywordsBuffer.toString().contains(searchKeyword)){
+                                if (!searchKeywordsBuffer.toString().contains(searchKeyword)) {
                                     searchKeywordsBuffer.append(searchKeyword + ",");
                                 }
                             }
-                            if(clickCategoryId!=null){
-                                if(!clickCategoryIdsBuffer.toString().contains(String.valueOf(clickCategoryId))){
+                            if (clickCategoryId != null) {
+                                if (!clickCategoryIdsBuffer.toString().contains(String.valueOf(clickCategoryId))) {
                                     clickCategoryIdsBuffer.append(clickCategoryId + ",");
                                 }
                             }
@@ -236,9 +239,9 @@ public class UserVisitSessionAnalyzeSpark {
                         // 我们这里统一定义，使用key=value|key=value
                         String partAggrInfo = Constants.FIELD_SESSION_ID + "=" + sessionid + "|"
                                 + Constants.FIELD_SEARCH_KEYWORDS + "=" + searchKeywords + "|"
-                                + Constants.FIELD_CLICK_CATEGORY_IDS + "=" +clickCategoryIds;
+                                + Constants.FIELD_CLICK_CATEGORY_IDS + "=" + clickCategoryIds;
 
-                        return new Tuple2<Long, String>(userid,partAggrInfo);
+                        return new Tuple2<Long, String>(userid, partAggrInfo);
                     }
                 });
 
@@ -247,27 +250,27 @@ public class UserVisitSessionAnalyzeSpark {
         JavaRDD<Row> userInfoRDD = sqlContext.sql(sql).javaRDD();
         System.out.println(userInfoRDD);
 
-        JavaPairRDD<Long,Row> userid2InfoRDD = userInfoRDD.mapToPair(
+        JavaPairRDD<Long, Row> userid2InfoRDD = userInfoRDD.mapToPair(
                 new PairFunction<Row, Long, Row>() {
                     @Override
                     public Tuple2<Long, Row> call(Row row) throws Exception {
-                        return new Tuple2<Long, Row>(row.getLong(0),row);
+                        return new Tuple2<Long, Row>(row.getLong(0), row);
                     }
                 }
         );
 
         //将session粒度聚合数据，与用户信息进行join
-        JavaPairRDD<Long,Tuple2<String,Row>> userid2FullInfoRDD = userid2PartAggrInfoRDD.join(userid2InfoRDD);
+        JavaPairRDD<Long, Tuple2<String, Row>> userid2FullInfoRDD = userid2PartAggrInfoRDD.join(userid2InfoRDD);
 
         // 对join起来的数据进行拼接，并且返回<sessionid,fullAggrInfo>格式的数据
-        JavaPairRDD<String,String> sessionid2FullAggrInfoRDD = userid2FullInfoRDD.mapToPair(
+        JavaPairRDD<String, String> sessionid2FullAggrInfoRDD = userid2FullInfoRDD.mapToPair(
                 new PairFunction<Tuple2<Long, Tuple2<String, Row>>, String, String>() {
                     @Override
                     public Tuple2<String, String> call(Tuple2<Long, Tuple2<String, Row>> tuple) throws Exception {
                         String partAggrInfo = tuple._2._1;
                         Row userInfoRow = tuple._2._2;
 
-                        String sessionid = StringUtils.getFieldFromConcatString(partAggrInfo,"\\|",Constants.FIELD_SESSION_ID);
+                        String sessionid = StringUtils.getFieldFromConcatString(partAggrInfo, "\\|", Constants.FIELD_SESSION_ID);
 
                         int age = userInfoRow.getInt(3);
                         String professional = userInfoRow.getString(4);
@@ -280,7 +283,7 @@ public class UserVisitSessionAnalyzeSpark {
                                 + Constants.FIELD_CITY + "=" + city + "|"
                                 + Constants.FIELD_SEX + "=" + sex;
 
-                        return new Tuple2<String, String>(sessionid,fullAggrInfo);
+                        return new Tuple2<String, String>(sessionid, fullAggrInfo);
                     }
                 }
         );
@@ -289,19 +292,20 @@ public class UserVisitSessionAnalyzeSpark {
 
     /**
      * 过滤session数据
+     *
      * @param sessionid2AggrInfoRDD
      * @param taskParam
      * @return
      */
-    private static JavaPairRDD<String,String> filterSession(JavaPairRDD<String,String> sessionid2AggrInfoRDD,final JSONObject taskParam){
+    private static JavaPairRDD<String, String> filterSession(JavaPairRDD<String, String> sessionid2AggrInfoRDD, final JSONObject taskParam) {
 
         // 为了使用我们后面的ValieUtils，所以，首先将所有的筛选参数拼接成一个连接串
         // 此外，这里其实大家不要觉得是多此一举
         // 其实我们是给后面的性能优化埋下了一个伏笔
-        String startAge = ParamUtils.getParam(taskParam,Constants.PARAM_START_AGE);
-        String endAge = ParamUtils.getParam(taskParam,Constants.PARAM_END_AGE);
-        String professionals = ParamUtils.getParam(taskParam,Constants.FIELD_PROFESSIONAL);
-        String cities = ParamUtils.getParam(taskParam,Constants.PARAM_CITIES);
+        String startAge = ParamUtils.getParam(taskParam, Constants.PARAM_START_AGE);
+        String endAge = ParamUtils.getParam(taskParam, Constants.PARAM_END_AGE);
+        String professionals = ParamUtils.getParam(taskParam, Constants.FIELD_PROFESSIONAL);
+        String cities = ParamUtils.getParam(taskParam, Constants.PARAM_CITIES);
         String sex = ParamUtils.getParam(taskParam, Constants.PARAM_SEX);
         String keywords = ParamUtils.getParam(taskParam, Constants.PARAM_KEYWORDS);
         String categoryIds = ParamUtils.getParam(taskParam, Constants.PARAM_CATEGORY_IDS);
@@ -312,16 +316,16 @@ public class UserVisitSessionAnalyzeSpark {
                 + (cities != null ? Constants.PARAM_CITIES + "=" + cities + "|" : "")
                 + (sex != null ? Constants.PARAM_SEX + "=" + sex + "|" : "")
                 + (keywords != null ? Constants.PARAM_KEYWORDS + "=" + keywords + "|" : "")
-                + (categoryIds != null ? Constants.PARAM_CATEGORY_IDS + "=" + categoryIds: "");
+                + (categoryIds != null ? Constants.PARAM_CATEGORY_IDS + "=" + categoryIds : "");
 
-        if(_parameter.endsWith("\\|")){
-            _parameter = _parameter.substring(0,_parameter.length()-1);
+        if (_parameter.endsWith("\\|")) {
+            _parameter = _parameter.substring(0, _parameter.length() - 1);
         }
 
         final String parameter = _parameter;
 
         // 根据筛选参数进行过滤
-        JavaPairRDD<String,String> filteredSessionid2AggrInfoRDD = sessionid2AggrInfoRDD.filter(
+        JavaPairRDD<String, String> filteredSessionid2AggrInfoRDD = sessionid2AggrInfoRDD.filter(
                 new Function<Tuple2<String, String>, Boolean>() {
                     @Override
                     public Boolean call(Tuple2<String, String> tuple) throws Exception {
@@ -330,7 +334,7 @@ public class UserVisitSessionAnalyzeSpark {
 
                         // 接着，依次按照筛选条件进行过滤
                         // 按照年龄范围进行过滤（startAge、endAge）
-                        if(!ValidUtils.between(aggrInfo, Constants.FIELD_AGE,
+                        if (!ValidUtils.between(aggrInfo, Constants.FIELD_AGE,
                                 parameter, Constants.PARAM_START_AGE, Constants.PARAM_END_AGE)) {
                             return false;
                         }
@@ -338,7 +342,7 @@ public class UserVisitSessionAnalyzeSpark {
                         // 按照职业范围进行过滤（professionals）
                         // 互联网,IT,软件
                         // 互联网
-                        if(!ValidUtils.in(aggrInfo, Constants.FIELD_PROFESSIONAL,
+                        if (!ValidUtils.in(aggrInfo, Constants.FIELD_PROFESSIONAL,
                                 parameter, Constants.PARAM_PROFESSIONALS)) {
                             return false;
                         }
@@ -346,7 +350,7 @@ public class UserVisitSessionAnalyzeSpark {
                         // 按照城市范围进行过滤（cities）
                         // 北京,上海,广州,深圳
                         // 成都
-                        if(!ValidUtils.in(aggrInfo, Constants.FIELD_CITY,
+                        if (!ValidUtils.in(aggrInfo, Constants.FIELD_CITY,
                                 parameter, Constants.PARAM_CITIES)) {
                             return false;
                         }
@@ -354,7 +358,7 @@ public class UserVisitSessionAnalyzeSpark {
                         // 按照性别进行过滤
                         // 男/女
                         // 男，女
-                        if(!ValidUtils.equal(aggrInfo, Constants.FIELD_SEX,
+                        if (!ValidUtils.equal(aggrInfo, Constants.FIELD_SEX,
                                 parameter, Constants.PARAM_SEX)) {
                             return false;
                         }
@@ -364,13 +368,13 @@ public class UserVisitSessionAnalyzeSpark {
                         // 我们的筛选条件可能是 火锅,串串香,iphone手机
                         // 那么，in这个校验方法，主要判定session搜索的词中，有任何一个，与筛选条件中
                         // 任何一个搜索词相当，即通过
-                        if(!ValidUtils.in(aggrInfo, Constants.FIELD_SEARCH_KEYWORDS,
+                        if (!ValidUtils.in(aggrInfo, Constants.FIELD_SEARCH_KEYWORDS,
                                 parameter, Constants.PARAM_KEYWORDS)) {
                             return false;
                         }
 
                         // 按照点击品类id进行过滤
-                        if(!ValidUtils.in(aggrInfo, Constants.FIELD_CLICK_CATEGORY_IDS,
+                        if (!ValidUtils.in(aggrInfo, Constants.FIELD_CLICK_CATEGORY_IDS,
                                 parameter, Constants.PARAM_CATEGORY_IDS)) {
                             return false;
                         }

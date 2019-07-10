@@ -20,7 +20,7 @@ public class JdbcCRUD {
     /**
      * 测试插入数据
      */
-    private static void insert(){
+    private static void insert() {
 
         // 总结一下JDBC的最基本的使用过程
         // 1、加载驱动类：Class.forName()
@@ -41,7 +41,7 @@ public class JdbcCRUD {
         // 比如insert、udpate、delete和select语句
         Statement stmt = null;
 
-        try{
+        try {
             // 第一步，加载数据库的驱动，我们都是面向java.sql包下的接口在编程，所以
             // 要想让JDBC代码能够真正操作数据库，那么就必须第一步先加载进来你要操作的数据库的驱动类
             // 使用Class.forName()方式来加载数据库的驱动类
@@ -53,7 +53,7 @@ public class JdbcCRUD {
             // 使用DriverManager.getConnection()方法获取针对数据库的连接
             // 需要给方法传入三个参数，包括url、user、password
             // 其中url就是有特定格式的数据库连接串，包括“主协议:子协议://主机名:端口号//数据库”
-            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/test03","root","root");
+            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/test03", "root", "root");
 
             // 基于数据库连接Connection对象，创建SQL语句执行句柄，Statement对象
             // Statement对象，就是用来基于底层的Connection代表的数据库连接
@@ -66,20 +66,20 @@ public class JdbcCRUD {
             // Statement.executeUpdate()方法，就可以用来执行insert、update、delete语句
             // 返回类型是个int值，也就是SQL语句影响的行数
             String sql = "insert into student_info(id,name,age) values(5,'李四',26)";
-            int  rtn = stmt.executeUpdate(sql);
+            int rtn = stmt.executeUpdate(sql);
             System.out.println("SQL语句影响了【" + rtn + "】行。");
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             // 最后一定要记得在finally代码块中，尽快在执行完SQL语句之后，就释放数据库连接
             try {
-                if(stmt!=null){
+                if (stmt != null) {
                     stmt.close();
                 }
-                if(conn!=null){
+                if (conn != null) {
                     conn.close();
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -88,7 +88,7 @@ public class JdbcCRUD {
     /**
      * 测试更新数据
      */
-    private static void update(){
+    private static void update() {
         Connection conn = null;
         Statement stmt = null;
         try {
@@ -109,10 +109,10 @@ public class JdbcCRUD {
             e.printStackTrace();
         } finally {
             try {
-                if(stmt != null) {
+                if (stmt != null) {
                     stmt.close();
                 }
-                if(conn != null) {
+                if (conn != null) {
                     conn.close();
                 }
             } catch (Exception e2) {
@@ -124,7 +124,7 @@ public class JdbcCRUD {
     /**
      * 测试删除数据
      */
-    private static void delete(){
+    private static void delete() {
         Connection conn = null;
         Statement stmt = null;
         try {
@@ -145,10 +145,10 @@ public class JdbcCRUD {
             e.printStackTrace();
         } finally {
             try {
-                if(stmt != null) {
+                if (stmt != null) {
                     stmt.close();
                 }
-                if(conn != null) {
+                if (conn != null) {
                     conn.close();
                 }
             } catch (Exception e2) {
@@ -160,7 +160,7 @@ public class JdbcCRUD {
     /**
      * 测试查询数据
      */
-    private static void select(){
+    private static void select() {
         Connection conn = null;
         Statement stmt = null;
         // 对于select查询语句，需要定义ResultSet
@@ -179,7 +179,7 @@ public class JdbcCRUD {
 
             rs = stmt.executeQuery(sql);
             // 获取到ResultSet以后，就需要对其进行遍历，然后获取查询出来的每一条数据
-            while (rs.next()){
+            while (rs.next()) {
                 int id = rs.getInt(1);
                 String name = rs.getString(2);
                 int age = rs.getInt(3);
@@ -189,10 +189,10 @@ public class JdbcCRUD {
             e.printStackTrace();
         } finally {
             try {
-                if(stmt != null) {
+                if (stmt != null) {
                     stmt.close();
                 }
-                if(conn != null) {
+                if (conn != null) {
                     conn.close();
                 }
             } catch (Exception e2) {
@@ -201,7 +201,7 @@ public class JdbcCRUD {
         }
     }
 
-    private static void preparedStatement(){
+    private static void preparedStatement() {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
@@ -218,7 +218,7 @@ public class JdbcCRUD {
             pstmt = conn.prepareStatement(sql);
 
             // 第二个，必须调用PreparedStatement的setX()系列方法，对指定的占位符设置实际的值
-            pstmt.setInt(1,5);
+            pstmt.setInt(1, 5);
             pstmt.setString(2, "李四");
             pstmt.setInt(3, 26);
 
@@ -226,15 +226,15 @@ public class JdbcCRUD {
             int rtn = pstmt.executeUpdate();
 
             System.out.println("SQL语句影响了【" + rtn + "】行。");
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             try {
-                if(pstmt != null) {
+                if (pstmt != null) {
                     pstmt.close();
                     System.out.println(pstmt + "关闭了");
                 }
-                if(conn != null) {
+                if (conn != null) {
                     conn.close();
                     System.out.println(conn + "关闭了");
                 }

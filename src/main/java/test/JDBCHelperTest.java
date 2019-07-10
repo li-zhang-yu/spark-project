@@ -57,9 +57,9 @@ public class JDBCHelperTest {
         String sql = "insert into student_info values(?,?,?)";
 
         List<Object[]> paramsList = new ArrayList<Object[]>();
-        paramsList.add(new Object[]{7,"赵六",26});
-        paramsList.add(new Object[]{8,"王八",29});
-        jdbcHelper.executeBatch(sql,paramsList);
+        paramsList.add(new Object[]{7, "赵六", 26});
+        paramsList.add(new Object[]{8, "王八", 29});
+        jdbcHelper.executeBatch(sql, paramsList);
     }
 
 }

@@ -92,4 +92,19 @@ public class ConfigurationManager {
         return 0;
     }
 
+    /**
+     * 获取布尔类型的配置项
+     * @param key
+     * @return
+     */
+    public static Boolean getBoolean(String key){
+        String value = getProperty(key);
+        try {
+            return Boolean.valueOf(value);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 }

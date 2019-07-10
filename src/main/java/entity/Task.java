@@ -2,6 +2,12 @@ package entity;
 
 import java.io.Serializable;
 
+/**
+ * 任务实体类
+ *
+ * @author lizhangyu
+ * @Date 2019-07-10
+ */
 public class Task implements Serializable {
 
     private long taskid;

@@ -13,6 +13,7 @@ public class TaskDaoImpl implements ITaskDAO {
 
     /**
      * 根据主键查询任务
+     *
      * @param taskid
      * @return
      */
@@ -24,7 +25,7 @@ public class TaskDaoImpl implements ITaskDAO {
         jdbcHelper.executeQuery(sql, params, new JDBCHelper.QueryCallback() {
             @Override
             public void process(ResultSet rs) throws Exception {
-                if(rs.next()){
+                if (rs.next()) {
                     long taskid = rs.getLong(1);
                     String taskName = rs.getString(2);
                     String createTime = rs.getString(3);
